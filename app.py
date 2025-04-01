@@ -16,14 +16,16 @@ def home():
 def ask():
     try:
         query = request.json.get("query", "")
-        print("📩 Incoming query:", query)
+        print("📩 Query received:", query)
+        print("🔑 OpenAI Key starts with:", openai.api_key[:5])
 
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # or gpt-4o if your key supports it
+            model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": query}]
         )
 
         answer = response.choices[0].message.content
+        print("✅ GPT response:", answer)
         return jsonify({"response": answer})
 
     except Exception as e:

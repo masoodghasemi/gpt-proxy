@@ -12,12 +12,14 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 def home():
     return "✅ OpenAI Proxy is Live!"
 
+import traceback  # add this at the top
+
 @app.route("/ask", methods=["POST"])
 def ask():
     try:
         query = request.json.get("query", "")
         print("📩 Query received:", query)
-        print("🔑 OpenAI Key starts with:", openai.api_key[:5])
+        print("🔑 OpenAI Key starts with:", openai.api_key[:5] if openai.api_key else "None")
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -30,6 +32,7 @@ def ask():
 
     except Exception as e:
         print("❌ ERROR:", e)
+        traceback.print_exc()  # ← this prints full stack trace!
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":

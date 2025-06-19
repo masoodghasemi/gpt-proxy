@@ -22,16 +22,13 @@ def ask():
         worksheet_data = body.get("worksheet_data", [])
         columns = body.get("columns", [])
 
-        # Generic system prompt
         system_prompt = (
-            "You are a helpful assistant analyzing structured data from a Tableau dashboard. "
-            "You may receive a list of data rows with various columns, including numeric and categorical values. "
-            "Respond to questions using only the data provided. Group, filter, or summarize as needed, "
-            "but do not guess or hallucinate values."
+            "You are a helpful data assistant. The user has provided worksheet data from a Tableau dashboard. "
+            "Interpret the structure yourself and answer their question accurately using only the data provided. "
+            "Group, filter, or summarize based on the user prompt, but do not assume field meanings unless evident."
         )
 
-        # Format the user message
-        user_message = f"{query}\n\nHere is the worksheet data (first 10 rows):\n" + json.dumps(worksheet_data[:10], indent=2)
+        user_message = f"{query}\n\nData sample:\n" + json.dumps(worksheet_data[:10], indent=2)
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -41,8 +38,7 @@ def ask():
             ]
         )
 
-        answer = response.choices[0].message.content.strip()
-        return jsonify({"response": answer})
+        return jsonify({"response": response.choices[0].message.content.strip()})
 
     except Exception as e:
         traceback.print_exc()

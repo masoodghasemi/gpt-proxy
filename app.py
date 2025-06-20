@@ -22,36 +22,42 @@ def ask():
         query = body.get("query", "")
         worksheet_data = body.get("worksheet_data", [])
 
-        if not worksheet_data or not isinstance(worksheet_data, list):
-            return jsonify({"error": "Invalid worksheet data."}), 400
+        print("📩 Query:", query)
+        print("🧪 Received rows:", len(worksheet_data))
+
+        if not worksheet_data or not isinstance(worksheet_data, list) or not worksheet_data[0]:
+            print("⚠️ No data to process.")
+            return jsonify({"response": "❌ No valid data received from Tableau."})
 
         df = pd.DataFrame(worksheet_data)
+        print("🧾 Columns detected:", df.columns.tolist())
 
-        # Identify types
+        # Separate numeric/categorical columns
         numeric_cols = df.select_dtypes(include="number").columns.tolist()
         categorical_cols = df.select_dtypes(exclude="number").columns.tolist()
 
-        # Group + summarize
+        # Group + summarize if possible
         if numeric_cols and categorical_cols:
             summary_df = df.groupby(categorical_cols)[numeric_cols].sum().reset_index()
         elif numeric_cols:
             summary_df = df[numeric_cols].sum(numeric_only=True).to_frame().T
         else:
-            summary_df = df.head(10)  # fallback if no numeric fields
+            summary_df = df.head(10)
 
-        summary_markdown = summary_df.to_markdown(index=False)
+        summary_md = summary_df.to_markdown(index=False)
 
-        # Construct GPT prompt
         system_prompt = (
-            "You are a data assistant. The user has provided a summarized table of worksheet data. "
-            "Answer the question using only the table. Do not make up numbers or columns."
+            "You are a helpful assistant. The user has provided summarized worksheet data. "
+            "Respond only based on this table. Do not guess or invent columns or values."
         )
 
         user_prompt = (
             f"{query}\n\n"
             "Here is the summarized data:\n\n"
-            f"{summary_markdown}"
+            f"{summary_md}"
         )
+
+        print("🧠 Final prompt to GPT:\n", user_prompt)
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -61,9 +67,13 @@ def ask():
             ]
         )
 
-        return jsonify({"response": response.choices[0].message.content.strip()})
+        answer = response.choices[0].message.content.strip()
+        print("✅ GPT Response:", answer or "[EMPTY]")
+
+        return jsonify({"response": answer if answer else "❌ GPT returned no response."})
 
     except Exception as e:
+        print("❌ Exception caught:", e)
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 

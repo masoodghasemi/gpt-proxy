@@ -4,6 +4,7 @@ import openai
 import os
 import traceback
 import json
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
@@ -20,21 +21,43 @@ def ask():
         body = request.json
         query = body.get("query", "")
         worksheet_data = body.get("worksheet_data", [])
-        columns = body.get("columns", [])
 
+        if not worksheet_data or not isinstance(worksheet_data, list):
+            return jsonify({"error": "Invalid worksheet data."}), 400
+
+        df = pd.DataFrame(worksheet_data)
+
+        # Identify types
+        numeric_cols = df.select_dtypes(include="number").columns.tolist()
+        categorical_cols = df.select_dtypes(exclude="number").columns.tolist()
+
+        # Group + summarize
+        if numeric_cols and categorical_cols:
+            summary_df = df.groupby(categorical_cols)[numeric_cols].sum().reset_index()
+        elif numeric_cols:
+            summary_df = df[numeric_cols].sum(numeric_only=True).to_frame().T
+        else:
+            summary_df = df.head(10)  # fallback if no numeric fields
+
+        summary_markdown = summary_df.to_markdown(index=False)
+
+        # Construct GPT prompt
         system_prompt = (
-            "You are a helpful data assistant. The user has provided worksheet data from a Tableau dashboard. "
-            "Interpret the structure yourself and answer their question accurately using only the data provided. "
-            "Group, filter, or summarize based on the user prompt, but do not assume field meanings unless evident."
+            "You are a data assistant. The user has provided a summarized table of worksheet data. "
+            "Answer the question using only the table. Do not make up numbers or columns."
         )
 
-        user_message = f"{query}\n\nData sample:\n" + json.dumps(worksheet_data[:10], indent=2)
+        user_prompt = (
+            f"{query}\n\n"
+            "Here is the summarized data:\n\n"
+            f"{summary_markdown}"
+        )
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
+                {"role": "user", "content": user_prompt}
             ]
         )
 

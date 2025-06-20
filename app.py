@@ -28,7 +28,7 @@ def ask():
             "Group, filter, or summarize based on the user prompt, but do not assume field meanings unless evident."
         )
 
-        user_message = f"{query}\n\nData sample:\n" + json.dumps(worksheet_data, indent=2)
+        user_message = f"{query}\n\nData sample:\n" + json.dumps(worksheet_data[:10], indent=2)
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",

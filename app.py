@@ -9,7 +9,8 @@ import openai
 app = Flask(__name__)
 CORS(app)
 
-openai.api_key = os.getenv("OPENAI_API_KEY")  # uses global default client
+# Use default OpenAI client
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.route("/", methods=["GET"])
 def home():
@@ -19,19 +20,21 @@ def home():
 def ask():
     try:
         body = request.json
-        query = body.get("query", "")
+        query = body.get("query", "").strip()
         worksheet_data = body.get("worksheet_data", [])
 
         print("📩 Query:", query)
-        print("🧪 Received rows:", len(worksheet_data))
+        print("🧪 Rows received:", len(worksheet_data))
 
         if not worksheet_data or not isinstance(worksheet_data, list) or not worksheet_data[0]:
             return jsonify({"response": "❌ No valid data received from Tableau."})
 
+        # Convert to DataFrame
         df = pd.DataFrame(worksheet_data)
         numeric_cols = df.select_dtypes(include="number").columns.tolist()
         categorical_cols = df.select_dtypes(exclude="number").columns.tolist()
 
+        # Summarize or fallback
         if numeric_cols and categorical_cols:
             summary_df = df.groupby(categorical_cols)[numeric_cols].sum().reset_index()
         elif numeric_cols:
@@ -39,15 +42,21 @@ def ask():
         else:
             summary_df = df.head(10)
 
-        summary_md = summary_df.to_markdown(index=False)
+        summary_text = summary_df.to_csv(index=False)
+        print("📊 Summary CSV:\n", summary_text)
 
+        # Construct system + user prompt
         system_prompt = (
-            "You are a helpful data assistant. The user has provided summarized worksheet data. "
-            "Only answer based on the data shown below. Do not guess missing values or invent fields."
+            "You are a helpful assistant working with structured data from a Tableau dashboard. "
+            "You are given a CSV summary table and a user question. "
+            "Answer only based on the table. Do not invent data or make assumptions."
         )
 
-        user_prompt = f"{query}\n\nHere is the summarized data:\n\n{summary_md}"
+        user_prompt = f"{query}\n\nHere is the summarized data:\n\n{summary_text}"
 
+        print("🧠 Final prompt to GPT:\n", user_prompt)
+
+        # Call GPT (OpenAI SDK v1)
         response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -57,10 +66,14 @@ def ask():
         )
 
         answer = response.choices[0].message.content.strip()
-        return jsonify({"response": answer or "❌ GPT returned no response."})
+        if not answer:
+            answer = "❌ GPT returned an empty response. Please try again or rephrase your question."
+        print("✅ GPT response:\n", answer)
+
+        return jsonify({"response": answer})
 
     except Exception as e:
-        print("❌ Error:", e)
+        print("❌ Exception occurred:", e)
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 

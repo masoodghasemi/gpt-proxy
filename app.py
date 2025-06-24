@@ -4,13 +4,14 @@ import pandas as pd
 import traceback
 import os
 import json
-import openai
+import httpx
+from openai import OpenAI
 
 app = Flask(__name__)
 CORS(app)
 
-# Use default OpenAI client
-openai.api_key = os.getenv("OPENAI_API_KEY")
+http_client = httpx.Client(proxies=None)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), http_client=http_client)
 
 @app.route("/", methods=["GET"])
 def home():
@@ -29,12 +30,10 @@ def ask():
         if not worksheet_data or not isinstance(worksheet_data, list) or not worksheet_data[0]:
             return jsonify({"response": "❌ No valid data received from Tableau."})
 
-        # Convert to DataFrame
         df = pd.DataFrame(worksheet_data)
         numeric_cols = df.select_dtypes(include="number").columns.tolist()
         categorical_cols = df.select_dtypes(exclude="number").columns.tolist()
 
-        # Summarize or fallback
         if numeric_cols and categorical_cols:
             summary_df = df.groupby(categorical_cols)[numeric_cols].sum().reset_index()
         elif numeric_cols:
@@ -45,7 +44,6 @@ def ask():
         summary_text = summary_df.to_csv(index=False)
         print("📊 Summary CSV:\n", summary_text)
 
-        # Construct system + user prompt
         system_prompt = (
             "You are a helpful assistant working with structured data from a Tableau dashboard. "
             "You are given a CSV summary table and a user question. "
@@ -54,10 +52,7 @@ def ask():
 
         user_prompt = f"{query}\n\nHere is the summarized data:\n\n{summary_text}"
 
-        print("🧠 Final prompt to GPT:\n", user_prompt)
-
-        # Call GPT (OpenAI SDK v1)
-        response = openai.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt},

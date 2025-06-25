@@ -10,7 +10,7 @@ from openai import OpenAI
 app = Flask(__name__)
 CORS(app)
 
-http_client = httpx.Client(proxies=None)
+http_client = httpx.Client()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), http_client=http_client)
 
 @app.route("/", methods=["GET"])

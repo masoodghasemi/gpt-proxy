@@ -3,13 +3,13 @@ from flask_cors import CORS
 import pandas as pd
 import traceback
 import os
-import json
 import httpx
 from openai import OpenAI
 
 app = Flask(__name__)
 CORS(app)
 
+# Create HTTP client for OpenAI
 http_client = httpx.Client()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), http_client=http_client)
 
@@ -31,26 +31,21 @@ def ask():
             return jsonify({"response": "❌ No valid data received from Tableau."})
 
         df = pd.DataFrame(worksheet_data)
-        numeric_cols = df.select_dtypes(include="number").columns.tolist()
-        categorical_cols = df.select_dtypes(exclude="number").columns.tolist()
 
-        if numeric_cols and categorical_cols:
-            summary_df = df.groupby(categorical_cols)[numeric_cols].sum().reset_index()
-        elif numeric_cols:
-            summary_df = df[numeric_cols].sum(numeric_only=True).to_frame().T
-        else:
-            summary_df = df.head(10)
+        # Keep only a few rows if too large (optional safety net)
+        if len(df) > 5000:
+            df = df.head(5000)
 
-        summary_text = summary_df.to_csv(index=False)
-        print("📊 Summary CSV:\n", summary_text)
+        summary_text = df.to_markdown(index=False)
+        print("📊 Data Markdown:\n", summary_text)
 
         system_prompt = (
-            "You are a helpful assistant working with structured data from a Tableau dashboard. "
-            "You are given a CSV summary table and a user question. "
-            "Answer only based on the table. Do not invent data or make assumptions."
+            "You are a helpful assistant analyzing structured data from a Tableau dashboard. "
+            "Only use the data provided below to answer the question. Do not guess or fabricate values. "
+            "Apply any filtering, summarization or logic directly on the data."
         )
 
-        user_prompt = f"{query}\n\nHere is the summarized data:\n\n{summary_text}"
+        user_prompt = f"{query}\n\nHere is the data:\n\n{summary_text}"
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -62,7 +57,7 @@ def ask():
 
         answer = response.choices[0].message.content.strip()
         if not answer:
-            answer = "❌ GPT returned an empty response. Please try again or rephrase your question."
+            answer = "❌ GPT returned an empty response."
         print("✅ GPT response:\n", answer)
 
         return jsonify({"response": answer})

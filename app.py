@@ -10,8 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Create HTTP client for OpenAI
-http_client = httpx.Client()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), http_client=http_client)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/", methods=["GET"])
 def home():

@@ -10,6 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Create HTTP client for OpenAI
+from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/", methods=["GET"])

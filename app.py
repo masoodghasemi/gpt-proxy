@@ -8,8 +8,8 @@ import openai
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Use global OpenAI client
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# ✅ Use OpenAI client instance (new SDK structure)
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/", methods=["GET"])
 def home():
@@ -45,7 +45,7 @@ def ask():
 
         user_prompt = f"{query}\n\nHere is the data:\n\n{summary_text}"
 
-        response = openai.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt},

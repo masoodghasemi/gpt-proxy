@@ -3,13 +3,12 @@ from flask_cors import CORS
 import pandas as pd
 import traceback
 import os
-import openai
+from openai import OpenAI  # ✅ CORRECT import
 
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Use OpenAI client instance (new SDK structure)
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/", methods=["GET"])
 def home():
@@ -30,7 +29,6 @@ def ask():
 
         df = pd.DataFrame(worksheet_data)
 
-        # Limit rows if needed
         if len(df) > 5000:
             df = df.head(5000)
 

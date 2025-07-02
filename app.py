@@ -29,9 +29,6 @@ def ask():
 
         df = pd.DataFrame(worksheet_data)
 
-        if len(df) > 5000:
-            df = df.head(5000)
-
         summary_text = df.to_markdown(index=False)
         print("📊 Data Markdown:\n", summary_text)
 

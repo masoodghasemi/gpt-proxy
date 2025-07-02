@@ -3,15 +3,13 @@ from flask_cors import CORS
 import pandas as pd
 import traceback
 import os
-import httpx
-from openai import OpenAI
+import openai
 
 app = Flask(__name__)
 CORS(app)
 
-# Create HTTP client for OpenAI
-from openai import OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# ✅ Use global OpenAI client
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.route("/", methods=["GET"])
 def home():
@@ -32,7 +30,7 @@ def ask():
 
         df = pd.DataFrame(worksheet_data)
 
-        # Keep only a few rows if too large (optional safety net)
+        # Limit rows if needed
         if len(df) > 5000:
             df = df.head(5000)
 
@@ -47,7 +45,7 @@ def ask():
 
         user_prompt = f"{query}\n\nHere is the data:\n\n{summary_text}"
 
-        response = client.chat.completions.create(
+        response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt},

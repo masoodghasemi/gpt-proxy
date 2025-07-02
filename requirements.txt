@@ -4,4 +4,4 @@ openai==1.1.1
 pandas==2.2.2
 tabulate==0.9.0
 httpx==0.28.1
-gunicorn==21.2.0      # ← Add this line if not present
+gunicorn==21.2.0

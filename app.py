@@ -29,7 +29,7 @@ def ask():
 
         df = pd.DataFrame(worksheet_data)
         print("🧾 Raw DataFrame from Tableau:")
-        print(df.head(50).to_string(index=False))
+        print(df.to_string(index=False))
 
         # Keep only a few rows if too large (optional safety net)
         if len(df) > 500:

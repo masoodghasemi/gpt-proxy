@@ -32,8 +32,8 @@ def ask():
         print(df.to_string(index=False))
 
         # Keep only a few rows if too large (optional safety net)
-        if len(df) > 10000:
-            df = df.head(10000)
+        if len(df) > 5000:
+            df = df.head(5000)
             
         summary_text = df.to_markdown(index=False)
         #print("📊 Data Markdown:\n", summary_text)

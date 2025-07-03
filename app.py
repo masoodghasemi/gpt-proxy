@@ -41,7 +41,7 @@ def ask():
         user_prompt = f"{query}\n\nHere is the data:\n\n{summary_text}"
 
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}

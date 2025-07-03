@@ -28,11 +28,15 @@ def ask():
             return jsonify({"response": "❌ No valid data received from Tableau."})
 
         df = pd.DataFrame(worksheet_data)
-        print("🧾 Raw DataFrame from Tableau:")
-        print(df.to_string(index=False))
+        #print("🧾 Raw DataFrame from Tableau:")
+        #print(df.to_string(index=False))
 
+        # Keep only a few rows if too large (optional safety net)
+        if len(df) > 500:
+            df = df.head(500)
+            
         summary_text = df.to_markdown(index=False)
-        print("📊 Data Markdown:\n", summary_text)
+        #print("📊 Data Markdown:\n", summary_text)
 
         system_prompt = (
             "You are a helpful assistant analyzing structured data from a Tableau dashboard. "

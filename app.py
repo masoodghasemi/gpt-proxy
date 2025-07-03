@@ -28,6 +28,8 @@ def ask():
             return jsonify({"response": "❌ No valid data received from Tableau."})
 
         df = pd.DataFrame(worksheet_data)
+        print("🧾 Raw DataFrame from Tableau:")
+        print(df.to_string(index=False))
 
         summary_text = df.to_markdown(index=False)
         print("📊 Data Markdown:\n", summary_text)
